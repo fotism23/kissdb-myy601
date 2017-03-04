@@ -27,6 +27,8 @@
 *.i*86
 *.x86_64
 *.hex
+server
+client
 
 # Debug files
 *.dSYM/
@@ -34,3 +36,7 @@
 
 # Database files
 *.db
+
+# Slash FIles
+*~
+
