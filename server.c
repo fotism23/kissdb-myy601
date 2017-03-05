@@ -9,68 +9,24 @@
 */
 #include "server.h"
 
-/* @name is_empty - Checks if the requests Stack is empty.
- * 
- * @return int 1 on empty. 0 on not-empty.
- */
-int is_empty(){
-    if (request_stack.stack_pointer == 0){
-        return 1;
-    }
-    return 0;
-}
-
-/* @name is_full - Checks if the requests Stack is full.
- * 
- * @return int 1 on full. 0 on not-full.
- */
-int is_full(){
-    if (request_stack.stack_pointer == STACK_SIZE){
-        return 1;
-    }
-    return 0;
-}
-
-
-/* @name push - Pushes an element to the request stack.
- * 
- * @return int 1 on success. 0 on Error.
- */
-int push(Element e){
-    if (is_full() == 0){
-        request_stack.requests[request_stack.stack_pointer] = e;
-        request_stack.stack_pointer++;
-        return 1;
-    }
-    return 0;
-}
-
-/* @name pop - Pops an element from the request stack.
- * 
- * @return First request on the stack. NULL on Error.
- */
-Element *pop(){
-    if (is_empty() == 0){
-        request_stack.stack_pointer--;
-        return &request_stack.requests[request_stack.stack_pointer];
-    }
-    return NULL;
-}
-
 /*
  * @name signal_handler - Overrides the default functionality of signals from the console.
  * @param signo: Signal Id.
  *   
  * @return Void
  */
-void signal_handler(int signo){
-    signal(SIGTSTP , signal_handler);
-    if (signo == SIGTSTP){
+void signal_handler(int signo){   
+    if (signo == SIGINT){
         double avg_waiting_time = (double) total_waiting_time / (double) completed_requests;
+        double avg_waiting_time_sec = (double) avg_waiting_time * 0.000001;
         double avg_service_time = (double) total_service_time / (double) completed_requests;
-        fprintf(stderr, "Total completed requests : %d\n", completed_requests);
-        fprintf(stderr, "Average waiting time : %f\n", avg_waiting_time);
-        fprintf(stderr, "Average service time : %f\n", avg_service_time);
+        double avg_service_time_sec = (double) avg_service_time * 0.000001;
+        fprintf(stdout, "\n============================================\n");
+        fprintf(stdout, "Total completed requests : %d\n", completed_requests);
+        fprintf(stdout, "Average waiting time : %f usec (%f sec)\n", avg_waiting_time, avg_waiting_time_sec);
+        fprintf(stdout, "Average service time : %f usec (%f sec)\n", avg_service_time, avg_service_time_sec);
+        fprintf(stdout, "============================================\n");
+        exit(0);
     }
 }
 
@@ -81,47 +37,47 @@ void signal_handler(int signo){
  * @return Initialized request on Success. NULL on Error.
  */
 Request *parse_request(char *buffer) {
-  char *token = NULL;
-  Request *req = NULL;
+    char *token = NULL;
+    Request *req = NULL;
 
-  // Check arguments.
-  if (!buffer)
-    return NULL;
+    // Check arguments.
+    if (!buffer)
+        return NULL;
 
-  // Prepare the request.
-  req = (Request *) malloc(sizeof(Request));
-  memset(req->key, 0, KEY_SIZE);
-  memset(req->value, 0, VALUE_SIZE);
+    // Prepare the request.
+    req = (Request *) malloc(sizeof(Request));
+    memset(req->key, 0, KEY_SIZE);
+    memset(req->value, 0, VALUE_SIZE);
 
-  // Extract the operation type.
-  token = strtok(buffer, ":");
-  if (!strcmp(token, "PUT")) {
-    req->operation = PUT;
-  } else if (!strcmp(token, "GET")) {
-    req->operation = GET;
-  } else {
-    free(req);
-    return NULL;
-  }
+    // Extract the operation type.
+    token = strtok(buffer, ":");
+    if (!strcmp(token, "PUT")) {
+        req->operation = PUT;
+    } else if (!strcmp(token, "GET")) {
+        req->operation = GET;
+    } else {
+        free(req);
+        return NULL;
+    }
 
-  // Extract the key.
-  token = strtok(NULL, ":");
-  if (token) {
-    strncpy(req->key, token, KEY_SIZE);
-  } else {
-    free(req);
-    return NULL;
-  }
+    // Extract the key.
+    token = strtok(NULL, ":");
+    if (token) {
+        strncpy(req->key, token, KEY_SIZE);
+    } else {
+        free(req);
+        return NULL;
+    }
 
-  // Extract the value.
-  token = strtok(NULL, ":");
-  if (token) {
-    strncpy(req->value, token, VALUE_SIZE);
-  } else if (req->operation == PUT) {
-    free(req);
-    return NULL;
-  }
-  return req;
+    // Extract the value.
+    token = strtok(NULL, ":");
+    if (token) {
+        strncpy(req->value, token, VALUE_SIZE);
+    } else if (req->operation == PUT) {
+        free(req);
+        return NULL;
+    }
+    return req;
 }
 
 /**
@@ -129,50 +85,53 @@ Request *parse_request(char *buffer) {
  *
  * @return Void pointer.
  */
-//worker thread routine.
-//serves all of GET requests.
 void * worker(){
     while(1){
-        pthread_mutex_lock(&stack_mutex);//Lock shared variables (request_stack).
-        pthread_cond_wait(&new_request , &stack_mutex);
-
-        //Pop element from stack.
-        Element *e = pop();
-
-        request_flag = 0;
+        // Lock shared variables (request_stack).
+        pthread_mutex_lock(&stack_mutex);
         
-        pthread_mutex_unlock(&stack_mutex);//Unlock shared variables.
-        printf("poped element fd:%d start_time:%lo\n",e->fd,e->start_time );
+        while (is_empty()){
+            pthread_cond_wait(&new_request , &stack_mutex);
+        }
+        
+        // Pop element from stack.
+        Element *element_poped = pop();
+        
+        // Unlock shared variables.
+        pthread_mutex_unlock(&stack_mutex);
 
-        if (e){
-            printf("Element poped from stack fd:%d start_time:%lo\n" ,e->fd , e->start_time );
-            //calculate request waiting_time in request_stack.
+        if (element_poped){
+            // Printouts if debug is enabled.
+            if (DEBUG) {
+                fprintf(stderr, "Consumer | Element poped from stack fd : %d start_time : %lo\n" ,element_poped->fd , element_poped->start_time  );
+                fprintf(stderr, "Consumer | Stack size : %d\n", stack_size());
+            }
+            
+            // Calculate request waiting_time in request_stack.
             gettimeofday(&tv , NULL);
-            long waiting_time = tv.tv_usec - e->start_time;
+            long waiting_time = tv.tv_usec - element_poped->start_time;
             long service_start = tv.tv_usec;
 
-            int new_fd;
-            char response_str[BUF_SIZE];
-            char request_str[BUF_SIZE];
-
-            Request *request = NULL;
-
+            char response_str[BUF_SIZE], request_str[BUF_SIZE];
             memset(response_str, 0, BUF_SIZE);
             memset(request_str, 0, BUF_SIZE);
 
-            new_fd = e->fd;
-            request = e->req;
-            //Execute GET request.
-            if (request){
-                if (KISSDB_get(db, request->key, request->value))
-                    sprintf(response_str, "GET ERROR\n");
-                else
-                    sprintf(response_str, "GET OK: %s\n", request->value);
-                write_str_to_socket(new_fd , response_str , strlen(response_str));
-            }
+            // Retrieve the file decriptor.
+            int new_fd = element_poped->fd;
+           
+            // Declare and allocate space for the value.
+            char * value = (char *)malloc(VALUE_SIZE);
+    
+            // Retrieve info from the Database.
+            if (KISSDB_get(db, element_poped->key, value))
+                sprintf(response_str, "GET ERROR\n");
+            else
+                sprintf(response_str, "GET OK: %s\n", value);
+            write_str_to_socket(new_fd , response_str , strlen(response_str));
+
             close(new_fd);
-            
-            //calculate request service_time.
+
+            // Calculate request service_time.
             gettimeofday(&tv , NULL);
             long service_time = tv.tv_usec - service_start;
             
@@ -186,6 +145,13 @@ void * worker(){
     pthread_exit(NULL);
 }
 
+
+/**
+ * @name worker - Responsible for setting up the server, wait and accecp/reject incoming connections,
+ *                serving PUT request and fowrding GET request to the worker threads.
+ *
+ * @return Void pointer.
+ */
 void * producer(){
     int socket_fd;              // listen on this socket for new connections
     int new_fd;                 // use this socket to service a new connection
@@ -193,23 +159,25 @@ void * producer(){
     struct sockaddr_in server_addr,  // my address information
                      client_addr;  // connector's address information
 
-    // Create socket
+    // Create socket.
     if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
       ERROR("socket()");
 
     // Ignore the SIGPIPE signal in order to not crash when a
     // client closes the connection unexpectedly.
-
-    // create socket adress of server (type, IP-adress and port number)
+    signal(SIGPIPE, SIG_IGN);
+    
+    // Create socket adress of server (type, IP-adress and port number).
     bzero(&server_addr, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = htonl(INADDR_ANY);    // any local interface
     server_addr.sin_port = htons(MY_PORT);
 
     // Bind socket to address
-    if (bind(socket_fd, (struct sockaddr *) &server_addr, sizeof(server_addr)) == -1)
-     ERROR("bind()");
-
+    if (bind(socket_fd, (struct sockaddr *) &server_addr, sizeof(server_addr)) == -1){
+        ERROR("bind()");
+    }
+    
     // Start listening to socket for incomming connections
     listen(socket_fd, MAX_PENDING_CONNECTIONS);
     fprintf(stderr, "(Info) main: Listening for new connections on port %d ...\n", MY_PORT);
@@ -227,20 +195,19 @@ void * producer(){
       pthread_exit((void *) 0);
     }
 
-    // Main loop: wait for new connection/requests
+    // Main loop: wait for new connection/requests.
     while (1) {
-        // Wait for incomming connection
+        // Wait for incomming connection.
         if ((new_fd = accept(socket_fd, (struct sockaddr *)&client_addr, &clen)) == -1) {
             ERROR("accept()");
         }
 
-        // Got connection, serve request
+        // Got connection, serve request.
         fprintf(stderr, "(Info) main: Got connection from '%s'\n", inet_ntoa(client_addr.sin_addr));
-
-        char response_str[BUF_SIZE], request_str[BUF_SIZE];
         int numbytes = 0;
         Request *request = NULL;
 
+        char response_str[BUF_SIZE], request_str[BUF_SIZE];
         memset(response_str , 0 , BUF_SIZE);
         memset(request_str , 0 , BUF_SIZE);
 
@@ -252,24 +219,32 @@ void * producer(){
                     gettimeofday(&tv , NULL);
                     
                     // Definition for the element that will be pushed to the stack.
-                    Element e;
-                    e.req = (Request *)malloc(sizeof(Request *));//Memory allocation for the element.
-                    e.req = request;
-                    e.fd = new_fd;
-                    e.start_time = tv.tv_usec;
+                    Element element_to_push;
+                    
+                    element_to_push.fd = new_fd;
+                    element_to_push.start_time = tv.tv_usec;
+                    element_to_push.key = (char *)malloc(KEY_SIZE);
 
+                    strcpy(element_to_push.key, request->key);
+                   
+                    // Lock stack before pushing request to stack.
                     pthread_mutex_lock(&stack_mutex);
 
-                    request_flag = 1;
                     // Push request to stack
-                    push(e);
+                    push(element_to_push);
 
-                    // Singal to inform worker threads that there is a new request in the stack.
+                    // Unlock stack and signal worker thread.
                     pthread_cond_signal(&new_request);
                     pthread_mutex_unlock(&stack_mutex);
-                    //printf("after push values are socket_fd:%d start_time:%lo\n",request_stack.requests[request_stack.stack_pointer -1].fd , request_stack.requests[request_stack.stack_pointer - 1].start_time);
+                    
+                    // Printouts if debug is enabled.
+                    if (DEBUG){
+                        printf("Poducer | Element pushed to stack fd : %d start_time : %lo\n" ,element_to_push.fd , element_to_push.start_time );
+                        printf("Poducer | Stack size : %d\n", stack_size());
+                    }
                 }else if(request->operation == PUT){
                     gettimeofday(&tv , NULL);
+
                     long waiting_time = 0;
                     long service_start = tv.tv_usec;
 
@@ -282,13 +257,12 @@ void * producer(){
                     write_str_to_socket(new_fd, response_str, strlen(response_str));
                     close(new_fd);
 
-                    //calculate request service_time.
+                    // Calculate request service_time.
                     gettimeofday(&tv , NULL);
                     long service_time = tv.tv_usec - service_start;
 
                     pthread_mutex_lock(&completed_requests_mutex);
-                    request_flag = 1;
-
+                    
                     completed_requests ++;
                     total_service_time += service_time;
                     total_waiting_time += waiting_time;
@@ -317,13 +291,12 @@ void * producer(){
 /*
  * @name main - The main routine.
  *
- * @return 0 on success, 1 on error.
+ * @return 0 on success, -1 on error.
  */
 int main() {
     gettimeofday(&tv , NULL);
 
-    signal(SIGPIPE, SIG_IGN); //Set signal ctrl+c handler.
-    signal(SIGTSTP , signal_handler); //Set signal ctrl+z handler.
+    signal(SIGINT, signal_handler); //Set signal ctrl+c handler.
     
     // Definition of worker thread data array.
     Thread_info worker_threads[MAX_THREAD_NUMBER];
@@ -336,19 +309,17 @@ int main() {
     pthread_mutex_init(&completed_requests_mutex , NULL);
     pthread_cond_init(&new_request , NULL);
 
-    void *status;
-
+    // Initialize stack attributes.
     request_stack.stack_pointer = 0;
    
-    // Set attributes for threads
+    // Set attributes for threads.
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr , PTHREAD_CREATE_JOINABLE);
 
-    int wt;
-    int pt;
+    int wt, pt;
     
-    // Initialize producer thred.
+    // Initialize producer thread.
     pt = pthread_create(&producer_thread.thread_id , &attr , producer , NULL);
     if (pt){
       printf("ERROR; return code from pthread_create() is %d\n" , pt);
@@ -367,15 +338,15 @@ int main() {
     }
 
     // Set joinable attribute for producer thread.
-    pt = pthread_join(producer_thread.thread_id , &status);
+    pt = pthread_join(producer_thread.thread_id , NULL);
     if (pt){
       printf("ERROR; return code from pthread_join() is %d\n", pt);
       exit(-1);
     }
-
+    
     // Set joinable attribute for worker threads.
     for (i = 0 ; i < MAX_THREAD_NUMBER ; i++){
-      wt = pthread_join(worker_threads[i].thread_id , &status);
+      wt = pthread_join(worker_threads[i].thread_id , NULL);
       if (wt){
         printf("ERROR; return code from pthread_join() is %d\n", wt);
         exit(-1);
