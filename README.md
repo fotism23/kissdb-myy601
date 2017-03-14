@@ -77,23 +77,23 @@ v2.0 (Changes made by F. Mitropoulos)
   - 1 thread which establishes a connection with the sever and serves single PUT and GET           requests.
   - 10 thread are responsible to serve -i request .
 
-Server specifications (as default):
+- Server specifications (as default):
 STACK_SIZE: 			100
 MAX_THREAD_NUMBER:		10
 MAX_PENDING_CONNECTIONS	10
 Tread attribute:	  JOINABLE
 Default sever_port:	      6767
 
-Client specifications (as default):
+- Client specifications (as default):
 STACK_SIZE:		       200
 MAX_THREAD_NUMBER		10
 MAX_STATION_ID		       128
 Default sever_port:	      6767
 
-Statistics:
+- Statistics:
 (For a sample of 22 requests, 10 simultaneous PUT, 10 simultaneous GET , 1 serial PUT and 1 serial GET)
 Average waiting time: 272.409091 usec
 Average service time: 50 usec
 
-Students contributed:
+- Students contributed:
 Fotios Mitropoulos AM:2486
