@@ -1,7 +1,6 @@
 #include "utils.h"
 #include <stdio.h>
-#define STACK_SIZE       200
-
+#define STACK_SIZE       100
 
 //Definition of the request element type which the stack holds.
 typedef struct stack_element{
@@ -12,13 +11,18 @@ typedef struct stack_element{
 //Definition of the stack type.
 typedef struct stack_s{
     int stack_pointer;
-    Element elements[STACK_SIZE];
+    Element **elements;
 } Stack;
 
 int is_empty();
 int is_full();
-int push(Element e);
+int push(Element *e);
 Element *pop();
 int stack_size();
+void to_string();
+void init_stack();
 
 Stack request_stack;
+
+
+

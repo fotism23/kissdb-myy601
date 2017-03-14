@@ -28,7 +28,7 @@ int is_full(){
  * 
  * @return int 1 on success. 0 on Error.
  */
-int push(Element e){
+int push(Element *e){
     if (is_full() == 0){
         request_stack.elements[request_stack.stack_pointer] = e;
         request_stack.stack_pointer++;
@@ -44,9 +44,10 @@ int push(Element e){
  */
 Element *pop(){
     if (is_empty() == 0){
-        Element * e = &request_stack.elements[request_stack.stack_pointer];
+		request_stack.elements[request_stack.stack_pointer] = NULL;
         request_stack.stack_pointer--;
-        return e;
+        return request_stack.elements[request_stack.stack_pointer];
+	
     }
     return NULL;
 }
@@ -57,4 +58,17 @@ Element *pop(){
  */
 int stack_size() {
     return request_stack.stack_pointer;
+}
+
+void init_stack() {
+	request_stack.stack_pointer = 0;
+    request_stack.elements = (Element **)malloc(STACK_SIZE * sizeof(Element *));
+}
+
+void to_string() {
+	int i;
+	for (i = 0; i < request_stack.stack_pointer; i++) {
+		fprintf(stderr, "Index  : %d\n", i);
+		fprintf(stderr, "Buffer : %s\n", request_stack.elements[i]->buffer);	
+	}
 }

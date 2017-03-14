@@ -5,7 +5,7 @@
  * @return int 1 on empty. 0 on not-empty.
  */
 int is_empty(){
-    if (request_stack.stack_pointer == 0){
+    if (request_stack.stack_pointer <= 0){
         return 1;
     }
     return 0;
@@ -16,7 +16,7 @@ int is_empty(){
  * @return int 1 on full. 0 on not-full.
  */
 int is_full(){
-    if (request_stack.stack_pointer == STACK_SIZE){
+    if (request_stack.stack_pointer >= STACK_SIZE){
         return 1;
     }
     return 0;

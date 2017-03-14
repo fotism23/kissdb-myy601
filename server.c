@@ -16,7 +16,7 @@
  * @return Void
  */
 void signal_handler(int signo){   
-    if (signo == SIGINT){
+    if (signo == SIGTSTP){
         double avg_waiting_time = (double) total_waiting_time / (double) completed_requests;
         double avg_waiting_time_sec = (double) avg_waiting_time * 0.000001;
         double avg_service_time = (double) total_service_time / (double) completed_requests;
@@ -91,7 +91,7 @@ void * worker(){
         pthread_mutex_lock(&stack_mutex);
         
         while (is_empty()){
-            pthread_cond_wait(&new_request , &stack_mutex);
+            pthread_cond_wait(&new_request, &stack_mutex);
         }
         
         // Pop element from stack.
@@ -121,12 +121,15 @@ void * worker(){
            
             // Declare and allocate space for the value.
             char * value = (char *)malloc(VALUE_SIZE);
+
+			//fprintf(stderr, "key : %s\n", element_poped->key);
     
             // Retrieve info from the Database.
             if (KISSDB_get(db, element_poped->key, value))
                 sprintf(response_str, "GET ERROR\n");
             else
                 sprintf(response_str, "GET OK: %s\n", value);
+                fprintf(stderr, "key : %s value : %s\n", element_poped->key, value);
             write_str_to_socket(new_fd , response_str , strlen(response_str));
 
             close(new_fd);
@@ -225,6 +228,7 @@ void * producer(){
                     element_to_push.start_time = tv.tv_usec;
                     element_to_push.key = (char *)malloc(KEY_SIZE);
 
+
                     strcpy(element_to_push.key, request->key);
                    
                     // Lock stack before pushing request to stack.
@@ -284,6 +288,7 @@ void * producer(){
             write_str_to_socket(new_fd, "FORMAT ERROR\n", strlen("FORMAT ERROR\n"));
             close(new_fd);
         }
+        
     }
     pthread_exit((void *) 0);//Exit the thread.
 }
@@ -296,7 +301,7 @@ void * producer(){
 int main() {
     gettimeofday(&tv , NULL);
 
-    signal(SIGINT, signal_handler); //Set signal ctrl+c handler.
+    signal(SIGTSTP, signal_handler); //Set signal ctrl+c handler.
     
     // Definition of worker thread data array.
     Thread_info worker_threads[MAX_THREAD_NUMBER];
@@ -329,14 +334,13 @@ int main() {
     // Initialize worker threads.
     for (i = 0 ; i < MAX_THREAD_NUMBER ; i++){
       worker_threads[i].thread_num = i;
-      worker_threads[i].working = 0;
       wt = pthread_create(&worker_threads[i].thread_id , &attr , worker , NULL);
       if (wt){
         printf("ERROR; return code from pthread_create() is %d\n" , wt);
         exit(-1);
       }
     }
-
+    
     // Set joinable attribute for producer thread.
     pt = pthread_join(producer_thread.thread_id , NULL);
     if (pt){

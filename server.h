@@ -19,7 +19,7 @@
 #define MAX_THREAD_NUMBER         10
 
 // Enable (1) / Disable (0) debugging printouts.
-#define DEBUG                      0
+#define DEBUG                      1
 
 // Definition of the operation type.
 typedef enum operation {
@@ -31,7 +31,6 @@ typedef enum operation {
 typedef struct thread_info{
   pthread_t thread_id;
   int thread_num;
-  int working;
 } Thread_info;
 
 // Definition of the request.

@@ -1,18 +1,30 @@
-/* client.c
+#include "utils/utils.h"
+#include <pthread.h>
+#include <stdio.h>
+#include <sys/stat.h>
+#include <signal.h>
+#include "utils/client_stack.h"
 
-   Sample code of
-   Assignment L1: Simple multi-threaded key-value server
-   for the course MYY601 Operating Systems, University of Ioannina
+#define SERVER_PORT     6767
+#define BUF_SIZE        2048
+#define MAXHOSTNAMELEN  1024
+#define MAX_STATION_ID   128
+#define ITER_COUNT         1
+#define GET_MODE           1
+#define PUT_MODE           2
+#define USER_MODE          3
+#define MAX_THREAD_NUMBER 10
 
-   (c) S. Anastasiadis, G. Kappes 2016
+typedef struct thread_info{
+    pthread_t thread_id;
+    int thread_num;
+} Thread_info;
 
-*/
-#include "client.h"
+int DEBUG = 0;
 
-/**
- * @name print_usage - Prints usage information.
- * @return
- */
+pthread_mutex_t stack_mutex;
+pthread_cond_t new_request;
+
 void print_usage() {
   fprintf(stderr, "Usage: client [OPTION]...\n\n");
   fprintf(stderr, "Available Options:\n");
@@ -27,46 +39,41 @@ void print_usage() {
   fprintf(stderr, "-p:             Repeatedly send PUT operations.\n");
 }
 
-/**
- * @name talk - Sends a message to the server and prints the response.
- * @server_addr: The server address.
- * @buffer: A buffer that contains a message for the server.
- *
- * @return
- */
 void * talk() {
-    while (1) {
-        puts("edw");
+    while (is_empty() == 0) {
         pthread_mutex_lock(&stack_mutex);
-        while (!request_flag){
-            pthread_cond_wait(&new_request , &stack_mutex);
-            
-        }
-        Element *e = pop();
-        request_flag = 0;
+        Element *element_poped = pop();
         pthread_mutex_unlock(&stack_mutex);
-        //printf("element poped %s\n", e->buffer);
-        
-        if (e){
-            char rcv_buffer[BUF_SIZE];
-            int socket_fd, numbytes;
 
+
+        if (element_poped){
+            if (DEBUG) {
+                fprintf(stderr, "Talk | Element poped, buffer : %s\n", element_poped->buffer);
+                fprintf(stderr, "Talk | stack pointer : %d\n", request_stack.stack_pointer);
+                fprintf(stderr, "Talk | Stack size : %d\n", stack_size());
+            }
+            
+            char rcv_buffer[BUF_SIZE];
+            int numbytes;
+
+            int socket_fd;
             //create socket.
             if ((socket_fd = socket(PF_INET, SOCK_STREAM, 0)) == -1) {
                 ERROR("socket()");
             }
 
             //connect to server.
-            if (connect(socket_fd , (struct sockaddr*) &e->server_addr , sizeof(e->server_addr)) == -1){
+            if (connect(socket_fd , (struct sockaddr*) &element_poped->server_addr , sizeof(element_poped->server_addr)) == -1){
                 ERROR("connect()");
             }
 
             // send message.
-            write_str_to_socket(socket_fd, e->buffer, strlen(e->buffer));
-
+            write_str_to_socket(socket_fd, element_poped->buffer, strlen(element_poped->buffer));
+    
             char * output_str = (char *)malloc(100);
-            sprintf(output_str , "Operation: %s\n", e->buffer);
+            sprintf(output_str , "Operation: %s\n", element_poped->buffer);
             strcat(output_str , "Result: ");
+
             do{
                 memset(rcv_buffer , 0 , BUF_SIZE);
                 numbytes = read_str_from_socket(socket_fd , rcv_buffer , BUF_SIZE);
@@ -82,11 +89,8 @@ void * talk() {
     pthread_exit(NULL);
 }
 
-/**
- * @name main - The main routine.
- */
 int main(int argc, char **argv) {
-    Thread_info worker_thread[MAX_THREAD_NUMBER];
+    Thread_info talk_thread[MAX_THREAD_NUMBER];
     pthread_mutex_init(&stack_mutex , NULL);
     pthread_cond_init(&new_request , NULL);
 
@@ -94,29 +98,8 @@ int main(int argc, char **argv) {
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr , PTHREAD_CREATE_JOINABLE);
 
-    request_stack.stack_pointer = 0;
+    init_stack();
 
-    int wt,i;
-
-    for (i = 0 ; i < MAX_THREAD_NUMBER ; i++){
-        worker_thread[i].thread_num = i;
-        wt = pthread_create(&worker_thread[i].thread_id , &attr , talk , NULL);
-        if (wt){
-            printf("ERROR; return code from pthread_create() is %d\n" , wt);
-            exit(-1);
-        }
-    }
-    
-    for (i = 0 ; i < MAX_THREAD_NUMBER ; i++){
-        
-        wt = pthread_join(worker_thread[i].thread_id , NULL);
-
-        if (wt){
-            printf("ERROR; return code from pthread_join() is %d\n", wt);
-            exit(-1);
-        }
-    }
-    
     char *host = NULL;
     char *request = NULL;
     int mode = 0;
@@ -130,9 +113,12 @@ int main(int argc, char **argv) {
     struct hostent *host_info;
 
     // Parse user parameters.
-    while ((option = getopt(argc, argv,"i:hgpo:a:")) != -1) {
+    while ((option = getopt(argc, argv,"di:hgpo:a:")) != -1) {
 
         switch (option) {
+            case 'd':
+                DEBUG = 1;
+                break;
             case 'h':
                 print_usage();
                 exit(0);
@@ -140,7 +126,6 @@ int main(int argc, char **argv) {
                 host = optarg;
                 break;
             case 'i':
-
                 count = atoi(optarg);
 	            break;
             case 'g':
@@ -198,17 +183,15 @@ int main(int argc, char **argv) {
         memset(snd_buffer, 0, BUF_SIZE);
         strncpy(snd_buffer, request, strlen(request));
 
-        Element e;
-        e.server_addr = server_addr;
-        e.buffer = snd_buffer;
+        Element *e = (Element *)malloc(sizeof(Element));
+        e->server_addr = server_addr;
+        e->buffer = snd_buffer;
+              
+        if (DEBUG) fprintf(stderr, "Main | Pushing element %s\n", e->buffer);
 
         pthread_mutex_lock(&stack_mutex);
-       
         push(e);
-        request_flag = 1;
-
         pthread_mutex_unlock(&stack_mutex);
-        pthread_cond_signal(&new_request);
     } else {
         while(--count>=0) {
             for (station = 0; station <= MAX_STATION_ID; station++) {
@@ -223,27 +206,47 @@ int main(int argc, char **argv) {
                     value = rand() % 65 + (-20);
                     sprintf(snd_buffer, "PUT:station.%d:%d", station, value);
                 }
+                Element *e = (Element *)malloc(sizeof(Element));
+                e->server_addr = server_addr;
+                e->buffer = snd_buffer;
 
-                Element e;
-                e.server_addr = server_addr;
-                e.buffer = snd_buffer;
-
-                fprintf(stderr, "pushing element %s\n", e.buffer);
-                
                 pthread_mutex_lock(&stack_mutex);
-
                 push(e);
-                request_flag = 1;
-
                 pthread_mutex_unlock(&stack_mutex);
-                pthread_cond_signal(&new_request);
+                
+                if (DEBUG) {
+                    fprintf(stderr, "Main | Pushing element %s\n", e->buffer);
+                    fprintf(stderr, "Main | Stack size : %d\n", stack_size());
+                }
             }
         }
-    }   
+    }
+
+    int wt,i;
+
+    for (i = 0 ; i < MAX_THREAD_NUMBER ; i++){
+        talk_thread[i].thread_num = i;
+        wt = pthread_create(&talk_thread[i].thread_id , &attr , talk , NULL);      
+        if (wt){
+            printf("ERROR; return code from pthread_create() is %d\n" , wt);
+            exit(-1);
+        }
+    }
+
+    for (i = 0 ; i < MAX_THREAD_NUMBER ; i++){
+        wt = pthread_join(talk_thread[i].thread_id, NULL);
+        if (wt){
+            printf("ERROR; return code from pthread_join() is %d\n", wt);
+            exit(-1);
+        }
+
+    }
 
     pthread_attr_destroy(&attr);
     pthread_mutex_destroy(&stack_mutex);
-    pthread_cond_destroy(&new_request);
-    pthread_exit(NULL);
-    return 0;
+    pthread_cond_destroy(&new_request);    
+
+    pthread_exit((void *) 0);
+    return (1);
 }
+
