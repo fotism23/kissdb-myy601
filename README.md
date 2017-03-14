@@ -92,8 +92,8 @@ v2.0 (Changes made by F. Mitropoulos)
 
 - Statistics:
 (For a sample of 22 requests, 10 simultaneous PUT, 10 simultaneous GET , 1 serial PUT and 1 serial GET)
-Average waiting time: 272.409091 usec
-Average service time: 50 usec
+  - Average waiting time: 272.409091 usec
+  - Average service time: 50 usec
 
 - Students contributed:
 Fotios Mitropoulos AM:2486
