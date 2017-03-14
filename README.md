@@ -78,11 +78,11 @@ v2.0 (Changes made by F. Mitropoulos)
   - 10 thread are responsible to serve -i request .
 
 - Server specifications (as default):
-STACK_SIZE: 			100
-MAX_THREAD_NUMBER:		10
-MAX_PENDING_CONNECTIONS	10
-Tread attribute:	  JOINABLE
-Default sever_port:	      6767
+- STACK_SIZE: 			100
+- MAX_THREAD_NUMBER:		10
+- MAX_PENDING_CONNECTIONS	10
+- Tread attribute:	  JOINABLE
+- Default sever_port:	      6767
 
 - Client specifications (as default):
 STACK_SIZE:		       200
