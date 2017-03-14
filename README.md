@@ -70,11 +70,12 @@ Author: Adam Ierymenko / ZeroTier Networks LLC
 
 v2.0 (Changes made by F. Mitropoulos)
 - Multithreading capabilities for server. 
-* 1 thread which accepts a connection, receives requests from clients and serves only PUT requests serially.
-* 10 threads working to serve GET requests.
+  - 1 thread which accepts a connection, receives requests from clients and serves only PUT requests serially.
+  - 10 threads working to serve GET requests.
+  
 - Multithreading capabilities for client. 
-* 1 thread which establishes a connection with the sever and serves single PUT and GET           requests.
-* 10 thread are responsible to serve -i request .
+  - 1 thread which establishes a connection with the sever and serves single PUT and GET           requests.
+  - 10 thread are responsible to serve -i request .
 
 Server specifications (as default):
 STACK_SIZE: 			100
