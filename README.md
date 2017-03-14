@@ -69,7 +69,7 @@ a test program on systems with gcc.
 Author: Adam Ierymenko / ZeroTier Networks LLC
 
 v2.0 (Changes made by F. Mitropoulos)
-*Multithreading capabilities for server. 
+* Multithreading capabilities for server. 
 1 thread which accepts a connection, receives requests from clients and serves only 
 PUT requests serially.
 10 threads working to serve GET requests.
@@ -97,6 +97,5 @@ Average service time: 50 usec
 
 Students contributed:
 Fotios Mitropoulos AM:2486
-Georgios Kafadaris AM:2457
 
  
