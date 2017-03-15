@@ -68,7 +68,9 @@ a test program on systems with gcc.
 
 Author: Adam Ierymenko / ZeroTier Networks LLC
 
-v2.0 (Changes made by F. Mitropoulos)
+
+# v2.0 Multithreading for Server and Client
+v2.0 Author: Fotios Mitropoulos
 - Multithreading capabilities for server. 
   - 1 thread which accepts a connection, receives requests from clients and serves only PUT requests serially.
   - 8 threads working to serve GET requests.
@@ -95,9 +97,6 @@ For a sample of 693 simultaneous GET requests. (see stats.pdf file for statistic
 - Stack size : 100, 8 Threads:
   - Average waiting time: 3.01852 usec
   - Average service time: 16.48654 usec
-
-- Students contributed:
-Fotios Mitropoulos AM:2486
 
 # Contact
 - fotismitropoulos@gmail.com
