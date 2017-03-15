@@ -11,12 +11,12 @@ typedef struct stack_element{
 //Definition of the stack type.
 typedef struct stack_s{
     int stack_pointer;
-    Element **elements;
+    Element *elements;
 } Stack;
 
 int is_empty();
 int is_full();
-int push(Element *e);
+int push(Element e);
 Element *pop();
 int stack_size();
 void to_string();

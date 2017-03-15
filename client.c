@@ -15,6 +15,7 @@
 #define USER_MODE          3
 #define MAX_THREAD_NUMBER 10
 
+
 typedef struct thread_info{
     pthread_t thread_id;
     int thread_num;
@@ -28,6 +29,7 @@ pthread_cond_t new_request;
 void print_usage() {
   fprintf(stderr, "Usage: client [OPTION]...\n\n");
   fprintf(stderr, "Available Options:\n");
+  fprintf(stderr, "-d:             Enable debugging printouts.\n");
   fprintf(stderr, "-h:             Print this help message.\n");
   fprintf(stderr, "-a <address>:   Specify the server address or hostname.\n");
   fprintf(stderr, "-o <operation>: Send a single operation to the server.\n");
@@ -112,6 +114,7 @@ int main(int argc, char **argv) {
     struct sockaddr_in server_addr; //TO STRUCT
     struct hostent *host_info;
 
+
     // Parse user parameters.
     while ((option = getopt(argc, argv,"di:hgpo:a:")) != -1) {
 
@@ -183,11 +186,10 @@ int main(int argc, char **argv) {
         memset(snd_buffer, 0, BUF_SIZE);
         strncpy(snd_buffer, request, strlen(request));
 
-        Element *e = (Element *)malloc(sizeof(Element));
-        e->server_addr = server_addr;
-        e->buffer = snd_buffer;
-              
-        if (DEBUG) fprintf(stderr, "Main | Pushing element %s\n", e->buffer);
+        Element e;
+        e.server_addr = server_addr;
+        e.buffer = snd_buffer;
+        if (DEBUG) fprintf(stderr, "Main | Pushing element %s\n", e.buffer);
 
         pthread_mutex_lock(&stack_mutex);
         push(e);
@@ -206,16 +208,17 @@ int main(int argc, char **argv) {
                     value = rand() % 65 + (-20);
                     sprintf(snd_buffer, "PUT:station.%d:%d", station, value);
                 }
-                Element *e = (Element *)malloc(sizeof(Element));
-                e->server_addr = server_addr;
-                e->buffer = snd_buffer;
+
+                Element e;
+                e.server_addr = server_addr;
+                e.buffer = snd_buffer;
 
                 pthread_mutex_lock(&stack_mutex);
                 push(e);
                 pthread_mutex_unlock(&stack_mutex);
                 
                 if (DEBUG) {
-                    fprintf(stderr, "Main | Pushing element %s\n", e->buffer);
+                    fprintf(stderr, "Main | Pushing element %s\n", e.buffer);
                     fprintf(stderr, "Main | Stack size : %d\n", stack_size());
                 }
             }

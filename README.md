@@ -71,29 +71,34 @@ Author: Adam Ierymenko / ZeroTier Networks LLC
 v2.0 (Changes made by F. Mitropoulos)
 - Multithreading capabilities for server. 
   - 1 thread which accepts a connection, receives requests from clients and serves only PUT requests serially.
-  - 10 threads working to serve GET requests.
+  - 8 threads working to serve GET requests.
   
 - Multithreading capabilities for client. 
   - 1 thread which establishes a connection with the sever and serves single PUT and GET           requests.
-  - 10 thread are responsible to serve -i request .
+  - 10 threads are responsible to serve -i request .
 
 - Server specifications (as default):
-  - STACK_SIZE: 			100
-  - MAX_THREAD_NUMBER:		10
-  - MAX_PENDING_CONNECTIONS	10
-  - Tread attribute:	  JOINABLE
+  - STACK_SIZE: 							 100
+  - MAX_THREAD_NUMBER:					 8
+  - MAX_PENDING_CONNECTIONS			10
+  - Tread attribute:	    JOINABLE
   - Default sever_port:	      6767
 
 - Client specifications (as default):
-  - STACK_SIZE:		       200
-  - MAX_THREAD_NUMBER		10
-  - MAX_STATION_ID		       128
+  - STACK_SIZE:		       			 200
+  - MAX_THREAD_NUMBER						10
+  - MAX_STATION_ID		       	 128
   - Default sever_port:	      6767
 
-- Statistics:
-(For a sample of 22 requests, 10 simultaneous PUT, 10 simultaneous GET , 1 serial PUT and 1 serial GET)
-  - Average waiting time: 272.409091 usec
-  - Average service time: 50 usec
+- Optimal Thread Number:
+ - For a sample of 693 simultaneous GET requests. (see stats.pdf file for statistical analysis)
+  - Stack size : 100, 8 Threads
+   - Average waiting time: 3.01852 usec
+   - Average service time: 16.48654 usec
 
 - Students contributed:
 Fotios Mitropoulos AM:2486
+
+# Contact
+- fotismitropoulos@gmail.com
+- cse32486@cs.uoi.gr

@@ -7,8 +7,8 @@
    (c) S. Anastasiadis, G. Kappes 2016
 
 */
-#include "server.h"
 
+#include "server.h"
 /*
  * @name signal_handler - Overrides the default functionality of signals from the console.
  * @param signo: Signal Id.

@@ -16,10 +16,10 @@
 #define HASH_SIZE               1024
 #define VALUE_SIZE              1024
 #define MAX_PENDING_CONNECTIONS   10
-#define MAX_THREAD_NUMBER         10
+#define MAX_THREAD_NUMBER         32
 
 // Enable (1) / Disable (0) debugging printouts.
-#define DEBUG                      1
+#define DEBUG                      0
 
 // Definition of the operation type.
 typedef enum operation {
