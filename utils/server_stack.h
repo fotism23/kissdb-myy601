@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#define STACK_SIZE                150
+#define STACK_SIZE                100
 
 //Definition of the request element type which the stack holds.
 typedef struct stack_element{

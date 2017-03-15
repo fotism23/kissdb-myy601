@@ -16,7 +16,7 @@
 #define HASH_SIZE               1024
 #define VALUE_SIZE              1024
 #define MAX_PENDING_CONNECTIONS   10
-#define MAX_THREAD_NUMBER         32
+#define MAX_THREAD_NUMBER          8
 
 // Enable (1) / Disable (0) debugging printouts.
 #define DEBUG                      0
