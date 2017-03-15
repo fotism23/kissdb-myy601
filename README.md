@@ -90,11 +90,11 @@ v2.0 (Changes made by F. Mitropoulos)
   - MAX_STATION_ID		       	 128
   - Default sever_port:	      6767
 
-- Optimal Thread Number:
- - For a sample of 693 simultaneous GET requests. (see stats.pdf file for statistical analysis)
-  - Stack size : 100, 8 Threads
-   - Average waiting time: 3.01852 usec
-   - Average service time: 16.48654 usec
+# Optimal Thread Number/Stack size values
+For a sample of 693 simultaneous GET requests. (see stats.pdf file for statistical analysis)
+ - Stack size : 100, 8 Threads
+  - Average waiting time: 3.01852 usec
+  - Average service time: 16.48654 usec
 
 - Students contributed:
 Fotios Mitropoulos AM:2486
