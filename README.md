@@ -92,7 +92,7 @@ v2.0 (Changes made by F. Mitropoulos)
 
 # Optimal Thread Number/Stack size values
 For a sample of 693 simultaneous GET requests. (see stats.pdf file for statistical analysis)
- - Stack size : 100, 8 Threads
+- Stack size : 100, 8 Threads:
   - Average waiting time: 3.01852 usec
   - Average service time: 16.48654 usec
 
