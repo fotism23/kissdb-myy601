@@ -211,7 +211,8 @@ int main(int argc, char **argv) {
 
                 Element e;
                 e.server_addr = server_addr;
-                e.buffer = snd_buffer;
+                e.buffer = (char *)malloc(BUF_SIZE);
+                strcpy(e.buffer, snd_buffer);
 
                 pthread_mutex_lock(&stack_mutex);
                 push(e);
