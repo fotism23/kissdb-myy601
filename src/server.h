@@ -50,9 +50,12 @@ pthread_cond_t new_request;
 int i;
 struct timeval tv; //Definition of the timeval struct.
 
-int completed_requests = 0; // Definition of the value that counts all the completed requests.
-long total_waiting_time; // Definition of the value that holds the total waiting time.
-long total_service_time; // Definition of the value that holds the total service time.
+// Definition of the value that counts all the completed requests.
+int completed_requests = 0; 
+// Definition of the value that holds the total waiting time.
+long total_waiting_time; 
+// Definition of the value that holds the total service time.
+long total_service_time; 
 
 void signal_handler(int signo);
 Request *parse_request(char *buffer);

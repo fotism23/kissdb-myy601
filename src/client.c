@@ -1,31 +1,9 @@
-#include "utils/utils.h"
-#include <pthread.h>
-#include <stdio.h>
-#include <sys/stat.h>
-#include <signal.h>
-#include "utils/client_stack.h"
+#include "client.h"
 
-#define SERVER_PORT     6767
-#define BUF_SIZE        2048
-#define MAXHOSTNAMELEN  1024
-#define MAX_STATION_ID   128
-#define ITER_COUNT         1
-#define GET_MODE           1
-#define PUT_MODE           2
-#define USER_MODE          3
-#define MAX_THREAD_NUMBER 10
-
-
-typedef struct thread_info{
-    pthread_t thread_id;
-    int thread_num;
-} Thread_info;
-
-int DEBUG = 0;
-
-pthread_mutex_t stack_mutex;
-pthread_cond_t new_request;
-
+/**
+ * @name print_usage - Prints usage information.
+ * @return
+ */
 void print_usage() {
   fprintf(stderr, "Usage: client [OPTION]...\n\n");
   fprintf(stderr, "Available Options:\n");
@@ -41,6 +19,11 @@ void print_usage() {
   fprintf(stderr, "-p:             Repeatedly send PUT operations.\n");
 }
 
+/**
+ * @name talk - Sends a message to the server and prints the response.
+ * 
+ * @return
+ */
 void * talk() {
     while (is_empty() == 0) {
         pthread_mutex_lock(&stack_mutex);
@@ -91,11 +74,18 @@ void * talk() {
     pthread_exit(NULL);
 }
 
+/**
+ * @name main - The main routine.
+ */
 int main(int argc, char **argv) {
+    // Definition of talk thread data array.
     Thread_info talk_thread[MAX_THREAD_NUMBER];
+    
+    // Initialize mutex variables and condition variables.
     pthread_mutex_init(&stack_mutex , NULL);
     pthread_cond_init(&new_request , NULL);
 
+    // Set thread attributes.
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr , PTHREAD_CREATE_JOINABLE);
@@ -226,6 +216,7 @@ int main(int argc, char **argv) {
         }
     }
 
+    // Go to multithread.
     int wt,i;
 
     for (i = 0 ; i < MAX_THREAD_NUMBER ; i++){

@@ -9,7 +9,8 @@
 */
 
 #include "server.h"
-/*
+
+/**
  * @name signal_handler - Overrides the default functionality of signals from the console.
  * @param signo: Signal Id.
  *   
@@ -150,7 +151,7 @@ void * worker(){
 
 
 /**
- * @name worker - Responsible for setting up the server, wait and accecp/reject incoming connections,
+ * @name producer - Responsible for setting up the server, wait and accecp/reject incoming connections,
  *                serving PUT request and fowrding GET request to the worker threads.
  *
  * @return Void pointer.
@@ -227,8 +228,6 @@ void * producer(){
                     element_to_push.fd = new_fd;
                     element_to_push.start_time = tv.tv_usec;
                     element_to_push.key = (char *)malloc(KEY_SIZE);
-
-
                     strcpy(element_to_push.key, request->key);
                    
                     // Lock stack before pushing request to stack.
@@ -301,7 +300,7 @@ void * producer(){
 int main() {
     gettimeofday(&tv , NULL);
 
-    signal(SIGTSTP, signal_handler); //Set signal ctrl+c handler.
+    signal(SIGTSTP, signal_handler); //Set signal ctrl+z handler.
     
     // Definition of worker thread data array.
     Thread_info worker_threads[MAX_THREAD_NUMBER];
